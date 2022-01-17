@@ -5,6 +5,8 @@ using UnityEngine;
 public class EnemyAI : MonoBehaviour
 {
     public float enemySpeed = 5f;
+    [Header("Turn this value to checked to move enemy in opposite direction")]
+    public bool moveInOppositeDir = false;
     public Camera camera;
     public SpriteRenderer enemySprite;
 
@@ -15,6 +17,9 @@ public class EnemyAI : MonoBehaviour
 
     private Vector2 screenSize;
     public float maxHorizontalMovement;
+
+    public bool isStunned = false;
+    bool stunningCalled = false;
 
     private void Start()
     {
@@ -31,7 +36,10 @@ public class EnemyAI : MonoBehaviour
 
     private void Update()
     {
-        AttackPlayer();
+        if (!isStunned)
+            AttackPlayer();
+        else if(isStunned && !stunningCalled)
+            StartCoroutine(StunnedByBullet());
     }
 
     private void FixedUpdate()
@@ -40,11 +48,21 @@ public class EnemyAI : MonoBehaviour
         FlipSpriteAtThEnd();
     }
 
+    private IEnumerator StunnedByBullet()
+    {
+        stunningCalled = true;
+        GetComponent<Animator>().SetBool("stunned", true);
+        yield return new WaitForSeconds(4f);
+        GetComponent<Animator>().SetBool("stunned", false);
+        isStunned = false;
+        stunningCalled = false;
+    }
+
     private void MoveEnemyToAndFro()
     {
-
+        float xVal = (moveInOppositeDir) ? -(Mathf.PingPong(Time.time * 3f, screenSize.x) - maxHorizontalMovement) : (Mathf.PingPong(Time.time * 3f, screenSize.x) - maxHorizontalMovement);
         transform.position = Vector2.MoveTowards(transform.position, new Vector2(
-            Mathf.PingPong(Time.time * 3f, screenSize.x) - maxHorizontalMovement,
+            xVal,
             transform.position.y), enemySpeed * Time.fixedDeltaTime);
        
     }

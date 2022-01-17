@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -14,6 +16,10 @@ public class GameManager : MonoBehaviour
     public int previousCherryCount, lastSelectedPlatform;
     public GameObject cherry;
 
+    public TextMeshProUGUI cherryCollectedText;
+
+    bool gameEnded = false;
+
     private void Awake()
     {
         if (instance == null)
@@ -23,17 +29,30 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         GetPlatformReferences();
-        previousCherryCount = 0;
-        
+        previousCherryCount = -1;
+        cherryCollectedText.text = currentCherryCount + " / " + totalNumberOfCherries;
     }
 
     private void Update()
     {
-        if (currentCherryCount > previousCherryCount)
+        if (currentCherryCount > previousCherryCount && currentCherryCount < totalNumberOfCherries)
         {
-            SpawnCherry();
+            StartCoroutine(SpawnCherry());
             previousCherryCount++;
         }
+        else if (currentCherryCount >= totalNumberOfCherries && !gameEnded)
+        {
+            gameEnded = true;
+            StartCoroutine(StartGameOverProcedure());
+        }
+    }
+
+    private IEnumerator StartGameOverProcedure()
+    {
+        Time.timeScale = 0.01f;
+        FindObjectOfType<PlayerController>().isDead = true;
+        yield return new WaitForSecondsRealtime(1.5f);
+        FindObjectOfType<GameUIManager>().GameOver(false);
     }
 
     private void GetPlatformReferences()
@@ -49,12 +68,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void SpawnCherry()
+    public IEnumerator SpawnCherry()
     {
         Transform platformSelect = platformInTheLevel[SelectPlatformWhereCherryWillSpawned()];
         Vector3 platformPosition = platformSelect.position;
         platformPosition.y = platformPosition.y + .5f;
-        
+        yield return new WaitForSeconds(0.5f);
         Instantiate(cherry, platformPosition, Quaternion.identity);
         
     }

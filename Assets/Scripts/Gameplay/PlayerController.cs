@@ -10,6 +10,11 @@ public class PlayerController : MonoBehaviour
     public Rigidbody2D playerPhysics;
     public SpriteRenderer playerSprite;
     public Animator playerAnimator;
+    public bool iFPlayerCanShoot;
+    public GameObject bullets;
+    public float timeRateToSpawnRock = 0.05f;
+    private float lastTimeWhenRockSpawned;
+    public Transform stoneSpawningPoint;
 
     private Camera camera;
 
@@ -19,6 +24,8 @@ public class PlayerController : MonoBehaviour
     public float maxHorizontalMovement;
 
     public bool isDead = false;
+
+    bool facingSideIsRight = true;
 
     private void Start()
     {
@@ -36,12 +43,21 @@ public class PlayerController : MonoBehaviour
         maxHorizontalMovement = (screenSize.x / 2f);
     }
 
+    private void Update()
+    {
+        if (!isDead)
+        {
+            JumpPlayer();
+            if(iFPlayerCanShoot)
+                ShootBullets();
+        }
+    }
+
     private void FixedUpdate()
     {
         if (!isDead)
         {
             MovePlayerHorizontally();
-            JumpPlayer();
             GravityScale();
         }
     }
@@ -59,12 +75,14 @@ public class PlayerController : MonoBehaviour
         if (hMoveValue > 0f)
         {
             FlipSpriteImage(false);
+            facingSideIsRight = true;
             transform.Translate(Vector2.right * hSpeed * Time.fixedDeltaTime);
             playerAnimator.SetBool("isRunning", true);
         }
         else if (hMoveValue < 0f)
         {
             FlipSpriteImage(true);
+            facingSideIsRight = false;
             transform.Translate(Vector2.left * hSpeed * Time.fixedDeltaTime);
             playerAnimator.SetBool("isRunning", true);
         }
@@ -78,16 +96,29 @@ public class PlayerController : MonoBehaviour
 
     private void JumpPlayer()
     {
-        if (Input.GetMouseButtonDown(0) && !hasJump)
+        if (Input.GetKeyDown(KeyCode.UpArrow) && !hasJump)
         {
             AddJumpForce(singleJumpForce);
             hasJump = true;
         }
     }
 
+    private void ShootBullets()
+    {
+        if (Input.GetMouseButton(0))
+        {
+            if (Time.time > timeRateToSpawnRock + lastTimeWhenRockSpawned)
+            {
+                GameObject @object = Instantiate(bullets, stoneSpawningPoint.position, Quaternion.identity);
+                @object.GetComponent<Rigidbody2D>().AddForce(Vector2.up * 5200f * Time.deltaTime, ForceMode2D.Impulse);
+                lastTimeWhenRockSpawned = Time.time;
+            }
+        }
+    }
+
     private void AddJumpForce(float force)
     {
-        playerPhysics.AddForce(Vector2.up * force * Time.fixedDeltaTime);
+        playerPhysics.AddForce(Vector2.up * force * 1.5f * Time.fixedDeltaTime, ForceMode2D.Impulse);
         playerAnimator.SetBool("hasJump", true);
 
     }
@@ -106,6 +137,10 @@ public class PlayerController : MonoBehaviour
             hasJump = false;
             playerAnimator.SetBool("hasJump", false);
         }
+        if (collision.gameObject.CompareTag("FirePlatfrom"))
+        {
+            Die();
+        }
     }
 
     public void Die()
@@ -121,11 +156,13 @@ public class PlayerController : MonoBehaviour
         GetComponent<PolygonCollider2D>().enabled = false;
         playerSprite.sortingLayerName = "Foreground";
         playerSprite.sortingOrder = 10;
+        yield return new WaitForSecondsRealtime(0.35f);
+        FindObjectOfType<GameUIManager>().GameOver(true);
     }
 
     private void GravityScale()
     {
-        transform.Translate(Vector2.down * Time.fixedDeltaTime);
+        transform.Translate(Vector2.down * 1.5f * Time.fixedDeltaTime);
     }
 
 }

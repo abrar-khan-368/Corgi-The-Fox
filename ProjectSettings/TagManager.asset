@@ -8,6 +8,8 @@ TagManager:
   - Rock
   - Platform
   - Cherry
+  - Eagle
+  - FirePlatfrom
   layers:
   - Default
   - TransparentFX
